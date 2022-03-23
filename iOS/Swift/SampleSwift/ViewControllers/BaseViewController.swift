@@ -19,13 +19,13 @@ let unsavedAnchorId = "placeholder-id"
 class BaseViewController: UIViewController, ARSCNViewDelegate, ASACloudSpatialAnchorSessionDelegate {
 
     // Set this string to the account ID provided for the Azure Spatial Anchors account resource.
-    let spatialAnchorsAccountId = "Set me"
+    let spatialAnchorsAccountId = "bfa0e9c9-6c5c-41c2-9be2-aa065772a1ed"
 
     // Set this string to the account key provided for the Azure Spatial Anchors account resource.
-    let spatialAnchorsAccountKey = "Set me"
+    let spatialAnchorsAccountKey = "POIWQDGHxlmBP52aXdOpxfixPFUXE2VEnN0Nv8Y4TIc="
 
     // Set this string to the account domain provided for the Azure Spatial Anchors account resource.
-    let spatialAnchorsAccountDomain = "Set me"
+    let spatialAnchorsAccountDomain = "australiaeast.mixedreality.azure.com"
 
     @IBOutlet var sceneView: ARSCNView!
 
@@ -101,6 +101,9 @@ class BaseViewController: UIViewController, ARSCNViewDelegate, ASACloudSpatialAn
 
         layoutButtons()
         
+        sceneView.automaticallyUpdatesLighting = true
+        sceneView.showsStatistics = true
+        
         if (spatialAnchorsAccountId == "Set me" || spatialAnchorsAccountKey == "Set me" || spatialAnchorsAccountDomain == "Set me") {
             mainButton.isHidden = true
             errorControl.isHidden = false
@@ -123,6 +126,7 @@ class BaseViewController: UIViewController, ARSCNViewDelegate, ASACloudSpatialAn
         // Create a session configuration
         let configuration = ARWorldTrackingConfiguration()
         sceneView.debugOptions = .showFeaturePoints
+        configuration.planeDetection = [.vertical, .horizontal]
         // Run the view's session
         sceneView.session.run(configuration)
     }
@@ -144,15 +148,13 @@ class BaseViewController: UIViewController, ARSCNViewDelegate, ASACloudSpatialAn
         
         var anchorLocation = simd_float4x4()
         let touchLocation = touches.first!.location(in: sceneView)
-        let hitResultsFeaturePoints: [ARHitTestResult] = sceneView.hitTest(touchLocation, types: .featurePoint)
-        if let hit = hitResultsFeaturePoints.first {
-            // If we have a feature point create the local anchor there
-            anchorLocation = hit.worldTransform
-        }
-        else if let currentFrame = sceneView.session.currentFrame {
+        let hitResultsFeaturePoints: [ARHitTestResult] = sceneView.hitTest(touchLocation, types: [.existingPlane, .featurePoint])
+        if let currentFrame = sceneView.session.currentFrame {
             // Otherwise create the local anchor using the camera's current position
             var translation = matrix_identity_float4x4
-            translation.columns.3.z = -0.5 // Put it 0.5 meters in front of the camera
+            translation.columns.3.z = -6 // Put it 0.5 meters in front of the camera
+            translation.columns.3.y = 0
+            translation.columns.3.x = -0.8
             let transform = simd_mul(currentFrame.camera.transform, translation)
             anchorLocation = transform
         }
@@ -171,7 +173,7 @@ class BaseViewController: UIViewController, ARSCNViewDelegate, ASACloudSpatialAn
         for visual in anchorVisuals.values {
             if (visual.localAnchor == anchor) {
                 print("renderer:nodeForAnchor with local anchor \(anchor) at \(BaseViewController.matrixToString(value: anchor.transform))")
-                let cube = SCNBox(width: 0.2, height: 0.2, length: 0.2, chamferRadius: 0.0)
+                let cube = SCNBox(width: 2, height: 1.4, length: 0.05, chamferRadius: 0.0)
                 if (visual.identifier != unsavedAnchorId) {
                     cube.firstMaterial?.diffuse.contents = foundColor
                 }
@@ -305,7 +307,11 @@ class BaseViewController: UIViewController, ARSCNViewDelegate, ASACloudSpatialAn
     }
     
     func lookForAnchor() {
-        let ids = [targetId!]
+        var ids = [targetId!]
+        ids.append(contentsOf: [
+            "626d233d-b7ff-4a03-999c-b289326df921"
+            , "362774d1-f8e9-437b-b72e-8d70aec19e6e"
+        ])
         let criteria = ASAAnchorLocateCriteria()!
         criteria.identifiers = ids
         cloudSession!.createWatcher(criteria)

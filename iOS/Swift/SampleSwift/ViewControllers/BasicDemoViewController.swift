@@ -10,17 +10,18 @@ class BasicDemoViewController: BaseViewController {
         
         DispatchQueue.main.async {
             self.feedbackControl.isHidden = true
-            self.mainButton.setTitle("Tap to start next Session & look for Anchor", for: .normal)
+            self.mainButton.setTitle("\(self.targetId!)", for: .normal)
+            print("\(self.targetId!)")
         }
     }
 
     override func onLocateAnchorsCompleted() {
         ignoreMainButtonTaps = false
-        step = .deleteFoundAnchors
+        step = .lookForAnchor
 
         DispatchQueue.main.async {
             self.feedbackControl.isHidden = true
-            self.mainButton.setTitle("Anchor found! Tap to delete", for: .normal)
+            self.mainButton.setTitle("Anchor found! Tap to locate again", for: .normal)
         }
     }
     
